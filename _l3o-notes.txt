@@ -1,0 +1,54 @@
+
+REGISTERS:
+
+R - General purpose stack, used for tons of shit. The size of R is dictated by the Component employing a GP16.
+T - Temporary numbers (Triggered by underscore)
+P - parameters; temporary much like those in T, but saved for the lifetime of a parameterized function. 
+
+
+UNARY INSTRUCTIONS:
+
+>	move to the right 1 place
+<	move to the left 1 place
+
+
+,	move the selected value to the parameter stack
+M	point to the address in R
+!	push (the address of the pointer) in R, OR point to a temp variable assigned the value of the current address (Similar to underscore)
+$	push the value at the current address onto R
+^	pop a value off R into the current address
+
++	Add the value at the pointer to R
+-	Subtract the value at the pointer from R
+/	Divide R by the value at the pointer
+*	Multiply R by the value at the pointer
+
+{	Enter a loop 
+}	Go to the loop condition
+
+Block types:
+p1, f{} - for loop
+p1, w{} - while loop
+p1, d{} - do-while loop
+p1, i{}	- if 
+(p1,) e{}	- else (if); else-if if there is a parameter.
+
+PARAMETERIZED INSTRUCTIONS: Executes a unary command which draws input from the next set of data; for one operation, the next popped or literal value goes to a waiting register which is then used and destroyed.
+
+_3, < 	move pointer to the left 3 times 
+_5, >		move pointer to the right 5 times
+
+_0xffff	Designate and point to a literal value which is temporary in memory (T register)
+
+#0xffff	Point to a Connection
+
+`NAME			Point to the System's variable NAME, unless there are parameters
+_0x00, `NAME	Execute the named method, passing selected value as a parameter
+
+::		Line comment
+::<>	Block comment
+
+_0x00 @NAME;	Sets an alias NAME for the address stored in R
+!_^@NAME;	sets an alias NAME for the currently selected address
+
+

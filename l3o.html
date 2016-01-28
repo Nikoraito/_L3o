@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>
+			L3o Interpreter
+		</title>
+		<link rel="stylesheet" type="text/css" href="l3o.css">
+		<script src="l3o.js"></script>
+	
+	
+	</head>
+	
+	<body>
+		<div id="main">
+			
+			
+			<canvas 
+				id="scr" 
+				name="screen"
+				width = "480"
+				height = "320"></canvas><br>
+			
+			<textarea readonly id="console" name="console" rows="16" cols="64" >Your Console Output will appear below.&#10;</textarea><br>
+			
+			
+			<form id="fm">
+			
+				<textarea
+				name="c_in" 
+				id="c_in" 
+				rows="1" cols="64"
+				onkeydown="if (event.keyCode == 13) cin()"></textarea>
+			</form>
+		</div>
+	</body>
+	
+</html>
+
