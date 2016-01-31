@@ -4,32 +4,42 @@
 // The code below may distributed in any way you see fit, provided that Leo's comments 
 // are not removed for any reason.
 
-var mem = [0];
-var memCap = 256;
 
-var aliases = [];
-var aFlag
 
-var ctx;
+////////////////////////////////////////////////////////
+// LANGUAGE VARIABLES: Part of the interpreter itself //
+////////////////////////////////////////////////////////
+var mem = [0];		//The general memory allocated to a program and indexable w/ the pointer as an array
+var memCap = 256;	//The maximum number of addresses (the array automatically expands when the pointer needs it. Not entirely necessary, but prevents users from trying to access memory in the array they haven't already used.)
 
-var r = [];			//0x0000
-var rCap = 32;
+var aliases = [];	//The dictionary of variable names to their locations in mem
+var aFlag;			//Set to 1 or true when the interpreter detects @, directs flow to the creation of a new alias
+
+var r = [];			//The result stack; stores the results of operations and stuff
+var rCap = 32;		//Has a max size as well. Pretty arbitrary in javascript but hey.
 	
-var bracktype = "";
+var bracktype = "";	//Set by 'f', 'w', 'd', 'i' or 'e', and set to one of these, do tell the interpreter what kind of block it's entering when it reaches {curlies}
 	
-var connections = {
-	"0" : 0	
+var connections = {	//This is arbitrary atm but is used to communicate between "Systems" which are not modeled in this example, except in limited scope by the scr canvas
+	"0" : 0			//Effectively a simple dictionary of variables shared between ingame Systems to allow, for instance, the ship's computer to communicate with the engines, turrets, etc.
 };	
-var cFlag = 0;
-var cPointer = "";
-	
-var debug = 0;
-var temp = 0;		
 
-var tFlag = 0;
-var pointer = 0;
+var cFlag = 0;		//Set to true when interpreter encounters #; means that the pointer should temporarily switch to one of the connections above. 
+var cPointer = "";	//Keeps track of which connection we're pointing to
 
-var hist = [];
+var temp = 0;		//the T register, briefly stores a number for feeding as parameters into functions, generating literals, etc.
+
+var tFlag = 0;		//Set to 1 when there is a temp variable. Controls the flow.
+var pointer = 0;	//Pointer to the current cursor index in mem
+
+////////////////////////////////////////////////////////////////////////
+// CONSOLE VARIABLES: Arbitrary functions of the CONSOLE and the page //
+////////////////////////////////////////////////////////////////////////
+
+var hist = [];		//SUPPOSED to be the history of commands entered so one can do up/down arrow to use recent commands. NOT working.
+var ctx;			//Context for the Canvas.
+
+var debug = 0;		//set to 1 when the `v command is used.
 
 function cin(){
 	var input = document.getElementById('c_in').value;
