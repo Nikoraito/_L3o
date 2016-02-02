@@ -60,7 +60,7 @@ function interpret(input){
 	/*	Inline reference 2016.01.25
 	//Registers:
 	
-	// R - General purpose, and output stack. Stores returns and results of operations.
+	// R(esult) - General purpose, and output stack. Stores returns and results of operations.
 	// T(emp) - Temporary space for literal values, triggered by underscore
 	// P(arameter) - Temporary space for whatever parameters are passed. dumped after execution of a parameterized function.
 	
@@ -78,30 +78,27 @@ function interpret(input){
 	//		/ -> r := (r / selected)
 	//		* -> r := (r * selected)
 	//		% -> r := (r % selected)
-	// Literal-parameter - use literal parameters written into the same token:
+	
+	// Compound commands:
+	
+	// Coded-parameter - subroutines that use literal parameters written into the same token in code:
 	//	_0xFFFF	put 0xFFFF into T, and point to it.
 	//	#0000	point to a Connection 0000.
-
-	// Parameterized - use P register for single and multiple parameter operations.
-	//	_x, >	move to the right x times	
-	//	_y,	<	move to the left y times
-	//	_x, _y, {+, -, *, /}	arithmetic
 	
-	// Meta:
 	//	@NAME;	alias NAME to whatever address is loaded into P.
 	//	@NAME	point to wherever NAME is said to be
-	*/
+
+	// 	~NAME{} creates a block of code named NAME whose contents are run when it is called. - NOT IMPLEMENTED
+	//	~NAME	Runs the named block of code. - NOT IMPLEMENTED
 	
-	/*var sys = {			//Object.setPrototypeOf(x, sys); to clone system object
-		mem : [],
-		memCap : 256,
-		r : [],
-		rCap : 32,
-		temp : 0,
-		parameters : [],
-		i : 0,	
-		pointer : 0
-	};*/
+	// Value-Parameter - subroutines that use P register for single and multiple parameter operations.
+	//	p1, >	move to the right x times	
+	//	p1,	<	move to the left y times
+	//	p1, p2, {+, -, *, /}	arithmetic
+	
+	// Macros - 
+
+	*/
 	
 	var i = 0;
 	
@@ -109,19 +106,19 @@ function interpret(input){
 		switch(input.charAt(i++)){
 			case '>': 
 				if(parameters.length > 0){
-					while (parameters.length > 0){
-						if(pointer+parameters[parameters.length-1] >= mem.length){
-							if(mem.length+parameters[parameters.length-1] < memCap){
-								while(mem.length-1 < pointer+parameters[parameters.length-1]){
+					while(parameters.length > 0){
+						if(pointer+parameters[0] >= mem.length){
+							if(mem.length+parameters[0] < memCap){
+								while(mem.length-1 < pointer+parameters[0]){
 									mem.push(0);
 								}
 							}
 						
-							pointer = (pointer+mem.length+parameters.pop()) % memCap; //pointer loops around if it's too big
+							pointer = (pointer+parameters.shift()) % memCap; //pointer loops around if it's too big
 						
 						}
 						else {
-							pointer += parameters[parameters.length-1];
+							pointer += parameters.shift();
 						}
 					}
 				}
@@ -152,15 +149,15 @@ function interpret(input){
 					}
 				}
 				else while (parameters.length > 0){
-					if(pointer-parameters[parameters.length-1] < 0){
-						pointer = (mem.length + ((pointer-parameters.pop())%mem.length)); //Pointer loops around if it's < 0
+					if(pointer-parameters[0] < 0){
+						pointer = (mem.length + ((pointer-parameters.shift())%mem.length)); //Pointer loops around if it's < 0
 					}
 					else{
-						pointer -= parameters.pop();
+						pointer -= parameters.shift();
 					}		
 				}
 				
-				parameters =[];	//ALL OF THESE CAN BE REMOVED IF EVERY USE OF PARAMETERIZED COMMANDS USES param.pop()
+				//parameters =[];	//parameters should be empty at this point as all parameters were pushed on and shifted off
 				break;
 				
 			case '$': 
@@ -183,6 +180,11 @@ function interpret(input){
 				r.push(pointer); 
 				break;
 			
+			case 'r':
+				tFlag = 1;
+				temp = r.pop();
+				break;
+				
 			case '^':
 				if (Boolean(cFlag)){
 					connections["" + cPointer] = r;
@@ -191,10 +193,12 @@ function interpret(input){
 					cout("#" + cPointer + " = " + connections[cPointer]);
 				}
 				else if(Boolean(tFlag)){
-					temp = r;/*;p;/
-					]
+					mem[pointer] = temp;	
+					temp = 0;
+					tFlag = 0;		/*;p;/
+									]
 					
-					|||||||||||||||||||||\*/
+									|||||||||||||||||||||\*/
 				} 
 				else {
 					mem[pointer] = r.pop();
@@ -214,9 +218,8 @@ function interpret(input){
 				break;
 			
 			case 'M':	// Move to the address shown in the parameters
-				if (parameters.length == 1 && parameters[0] < memCap){
-					pointer = parameters[0];
-					parameters = [];
+				if (parameters.length == 1 && parameters[0] < memCap && parameters[0] >= 0){
+					pointer = parameters.shift();
 				}
 				else{
 					pointer = r.pop();
@@ -237,10 +240,11 @@ function interpret(input){
 			
 			case '+':
 				if(parameters.length > 1){	//If more than one parameter is listed, add them all and store the result in R.
-					r.push(parameters[0]);
-					for(j = 1; j < parameters.length; j++){
+					r.push(parameters.shift());
+					while(parameters.length > 0){
 						r[r.length-1] += parameters.shift(); //REPLACE WITH r.pop()?
 					}
+
 				} 
 				else if(parameters.length == 1){	//If only one parameter is added, add it to the current value of R.
 					r[r.length-1] += parameters.shift();
@@ -253,8 +257,8 @@ function interpret(input){
 			
 			case '-':
 				if(parameters.length > 1){
-					r.push(parameters[0]);
-					for(j = 1; j < parameters.length; j++){	//Same deal as subtraction, NOTE that the stacking behavior of subtraction may be strange
+					r.push(parameters.shift());
+					while(parameters.length > 0){	//Same deal as subtraction, NOTE that the stacking behavior of subtraction may be strange
 						r[r.length-1] -= parameters.shift();
 					}
 
@@ -271,8 +275,8 @@ function interpret(input){
 			
 			case '/':
 				if(parameters.length > 1){
-					r.push(parameters[0]);
-					for(j = 1; j < parameters.length; j++){	//Same deal as subtraction, NOTE that stacking with 
+					r.push(parameters.shift());
+					while(parameters.length > 0){	
 						r[r.length-1] /= parameters.shift();
 					}
 					
@@ -288,8 +292,8 @@ function interpret(input){
 				break;
 			case '*':
 				if(parameters.length > 1){
-					r.push(parameters[0]);
-					for(j = 1; j < parameters.length; j++){	//Same deal as subtraction
+					r.push(parameters.shift());
+					while(parameters.length > 0){	//Same deal as subtraction
 						r[r.length-1] *= parameters.shift();	//replace parameters[j] -> parameters.shift()
 					}
 				} 
@@ -310,8 +314,39 @@ function interpret(input){
 					j++;
 				}
 				cPointer = "" + parseInt(input.substring(i, j));
-				connections[cPointer] = 0xDECAF123;
+				connections[cPointer] = 0xDECAF123;	//Magic number placed on a connection to show that this system is using it.
 				i = j;
+				break;
+				
+			case '@':
+				var j = i;
+				var sub = "";
+				
+				while(input.charAt(j).match(/\w/) && (j) < input.length){
+					j++;
+				}
+				
+				sub = input.substring(i, j);
+				
+				if(input.charAt(j) == ';'){	//If we have @NAME; , we create a NEW alias which is then added to the list of aliases : addresses
+					//gfvtr
+					if(parameters.length > 0){
+						aliases[sub] = parameters.shift();	//We can name the address with a parameter,
+						parameters = [];
+					}
+					else{
+						aliases[sub] = pointer;
+					}
+					
+					i=j+1;	//We return the master interpret() cursor to the whiteSpace after ';'
+				}
+				else{					
+					
+					if(sub in aliases) pointer = aliases[sub];	//Otherwise if we just read @NAME, we recognize it as a reference to an existing alias, and try to assign temp to its value
+					else cout("Alias " + sub + " is not in aliases[].");
+					
+					i = j; //We return the interpret() cursor to j, this was if the character is a comma or anything instead, that gets interpreted next. 
+				}
 				break;
 			
 			case '`':
@@ -356,8 +391,9 @@ function interpret(input){
 						
 						break;
 					case 'd':
-						debug = 1;
+						debug = 1 ^ debug; // toggle debugging.
 						break;
+						
 					default: cout("Invalid metacommand.");
 					
 				} break;
@@ -388,13 +424,18 @@ function interpret(input){
 				break;
 			
 			
-		default: if(input.charAt(i).match(/\w/)) cout("Unrecognized Command.");	
+			default: if(input.charAt(i).match(/\w/)) cout("Unrecognized Command: " + input.charAt(i));	
 		}		
 	}
 	
 	if(Boolean(debug)){
 		printMem();
 		cout("R: " + r + "\tT: " + temp + "\tP: " + parameters + " ");
+		cout("Aliases: {");
+		for(n in aliases){
+			cout(n + " : " + aliases[n]);
+		}
+		cout('}');
 		cout("Connections: {");
 		for(n in connections){
 			cout(" #" + decToHex(n) + " : " + decToHex(connections[n]));
