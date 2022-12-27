@@ -2,8 +2,8 @@
 /'lioʊ/
 
 The below, included in l3o.js is the a reference dated 2016.01.25
+
 	Registers:
-	
 	 R - General purpose, and output stack. Stores returns and results of operations.
 	 T(emp) - Temporary space for literal values, triggered by underscore
 	 P(arameter) - Temporary space for whatever parameters are passed. dumped after execution of a parameterized function.
